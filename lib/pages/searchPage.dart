@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:social_media1/Widgets/headerWidget.dart';
 
 class SearchPage extends StatefulWidget {
   @override
@@ -9,7 +10,9 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(title: Text("Post Screen")));
+      backgroundColor: Colors.black,
+      appBar: header(context,
+          isAppTitle: false, strTitle: "Search", disappearBackButton: false),
+    );
   }
 }
