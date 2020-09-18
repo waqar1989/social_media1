@@ -1,12 +1,15 @@
 import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:async';
-
 import 'package:image/image.dart' as ImD;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:social_media1/services/database.dart';
+import 'package:provider/provider.dart';
+import 'package:social_media1/models/user.dart';
 
 class UploadPage extends StatefulWidget {
   @override
@@ -18,20 +21,17 @@ class _UploadPageState extends State<UploadPage> {
   bool uploading = false;
   String downloadUrl;
   final picker = ImagePicker();
+
   TextEditingController desciptionTextEditingController =
       TextEditingController();
   TextEditingController locationTextEditingController = TextEditingController();
   final _firestore = FirebaseFirestore.instance;
 
   get _platform => null;
-
-  // String postId = Uuid().v4();
-
   Future addImageFromGallery() async {
     Navigator.pop(context);
     final pickedFile = await picker.getImage(
         source: ImageSource.gallery, maxHeight: 680, maxWidth: 970);
-
     setState(() {
       _image = File(pickedFile.path);
     });
@@ -85,7 +85,7 @@ class _UploadPageState extends State<UploadPage> {
     );
   }
 
-  displayScreen() {
+  displayScreen(user) {
     return Container(
       color: Colors.black,
       child: Column(
@@ -116,17 +116,6 @@ class _UploadPageState extends State<UploadPage> {
     });
   }
 
-  // Future<String> uploadPhoto() async {
-  //   final StorageReference firebaseStorageRef =
-  //       FirebaseStorage.instance.ref().child('14 Pictures');
-  //   final StorageUploadTask task = firebaseStorageRef.putFile(_image);
-  //   var mStorageUploadTask;
-  //   StorageTaskSnapshot storageTaskSnapshot =
-  //       await mStorageUploadTask.onComplete;
-  //   String downloadUrl = await storageTaskSnapshot.ref.getDownloadURL();
-  //   return downloadUrl;
-  // }
-
   Future<Directory> getTemporaryDirectory() async {
     final String path = await _platform.getTemporaryPath();
     if (path == null) {
@@ -146,36 +135,47 @@ class _UploadPageState extends State<UploadPage> {
     });
   }
 
-  savePostInfoToFireStore(String url, String location, String descripton) {
-    _firestore.collection("user posts").add({
-      "postId": {},
-      "ownerId": {},
-      "timestamp": {},
-      "Likes": {},
-      "username": {},
-      "desciption": descripton,
-      "location": location,
-      "url": url
-    }).then((value) => null);
+  // savePostInfoToFireStore(String url, String location, String descripton) {
+  //   _firestore.collection("user posts").add({
+  //     "postId": {},
+  //     "ownerId": {},
+  //     "timestamp": {},
+  //     "Likes": {},
+  //     "username": {},
+  //     "desciption": descripton,
+  //     "location": location,
+  //     "url": url
+  //   }).then((value) => null);
+  // }
+
+  controlUploadAndSave(user) async {
+    uploading = true;
+
+    await compressingPhoto();
+    String downloadUrl = await uploadPhoto(_image);
+
+    DatabaseService(uid: user.uid).updatePostData(
+      user.toString(),
+      desciptionTextEditingController.text,
+      downloadUrl,
+      locationTextEditingController.text,
+    );
   }
 
-  controlUploadAndSave() async {
-    setState(() async {
-      uploading = true;
-      //downloadUrl = await uploadPhoto();
-      await compressingPhoto();
-      await savePostInfoToFireStore(
-          downloadUrl,
-          locationTextEditingController.text,
-          desciptionTextEditingController.text);
-    });
-
-    locationTextEditingController.clear();
-    desciptionTextEditingController.clear();
-    setState(() {
-      _image = null;
-      uploading = false;
-    });
+  Future<String> uploadPhoto(mImageFile) async {
+    try {
+      DatabaseService databaseService = DatabaseService();
+      StorageUploadTask mstorageUploadTask = databaseService.storageReference
+          .child("post_&postId.jpg")
+          .putFile(mImageFile);
+      StorageTaskSnapshot storageTaskSnapshot =
+          await mstorageUploadTask.onComplete;
+      String downloadUrl = await storageTaskSnapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      print(e.toString());
+      return null;
+    }
   }
 
   getUserCurrentLocation() async {
@@ -190,104 +190,115 @@ class _UploadPageState extends State<UploadPage> {
     locationTextEditingController.text = speceficAddress;
   }
 
-  displayUploadFormScreen() {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        leading: IconButton(
-            icon: Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: removePage),
-        title: Text(
-          "New Post",
-          style: TextStyle(
-              fontSize: 24.0, color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          FlatButton(
-            onPressed: () {},
-            child: Text(
-              "Share",
-              style: TextStyle(
-                  color: Colors.green,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16.0),
+  displayUploadFormScreen(user) {
+    return StreamBuilder<PostData>(
+        stream: DatabaseService(uid: user.uid).postData,
+        builder: (context, snapshot) {
+          PostData postData = snapshot.data;
+          return Scaffold(
+            backgroundColor: Colors.black,
+            appBar: AppBar(
+              backgroundColor: Colors.black,
+              leading: IconButton(
+                  icon: Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: removePage),
+              title: Text(
+                "New Post",
+                style: TextStyle(
+                    fontSize: 24.0,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold),
+              ),
+              actions: [
+                FlatButton(
+                  onPressed: () async {
+                    uploading ? null : controlUploadAndSave(user);
+                  },
+                  child: Text(
+                    "Share",
+                    style: TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16.0),
+                  ),
+                )
+              ],
             ),
-          )
-        ],
-      ),
-      body: ListView(
-        children: [
-          Container(
-            height: 230.0,
-            width: 230.0,
-            child: Center(
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: Container(
-                  decoration: BoxDecoration(
-                      image: DecorationImage(
-                          image: FileImage(_image), fit: BoxFit.cover)),
+            body: ListView(
+              children: [
+                Container(
+                  height: 230.0,
+                  width: 230.0,
+                  child: Center(
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: Container(
+                        decoration: BoxDecoration(
+                            image: DecorationImage(
+                                image: FileImage(_image), fit: BoxFit.cover)),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.only(top: 12.0),
-          ),
-          ListTile(
-              leading: CircleAvatar(
-                radius: 25,
-                backgroundImage: AssetImage('assets/images/background.jpg'),
-              ),
-              title: Container(
-                  width: 250.0,
-                  child: TextField(
+                Padding(
+                  padding: EdgeInsets.only(top: 12.0),
+                ),
+                ListTile(
+                    leading: CircleAvatar(
+                      radius: 25,
+                      // backgroundImage:
+                      //     AssetImage('assets/images/background.jpg'),
+                    ),
+                    title: Container(
+                        width: 250.0,
+                        child: TextField(
+                            style: TextStyle(color: Colors.white),
+                            controller: desciptionTextEditingController,
+                            decoration: InputDecoration(
+                                hintText: "share your ideas here",
+                                hintStyle: TextStyle(color: Colors.white),
+                                border: InputBorder.none)))),
+                Divider(),
+                ListTile(
+                    leading: Icon(Icons.person_pin_circle,
+                        color: Colors.white, size: 36),
+                    title: Container(
+                        width: 250.0,
+                        child: TextField(
+                            style: TextStyle(color: Colors.white),
+                            controller: locationTextEditingController,
+                            decoration: InputDecoration(
+                                hintText: "share your location here",
+                                hintStyle: TextStyle(color: Colors.white),
+                                border: InputBorder.none)))),
+                Container(
+                  alignment: Alignment.center,
+                  height: 110,
+                  width: 220,
+                  child: RaisedButton.icon(
+                    color: Colors.green,
+                    onPressed: getUserCurrentLocation,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(35.0)),
+                    icon: Icon(
+                      Icons.location_on,
+                      color: Colors.white,
+                    ),
+                    label: Text(
+                      "Set my current location",
                       style: TextStyle(color: Colors.white),
-                      controller: desciptionTextEditingController,
-                      decoration: InputDecoration(
-                          hintText: "share your ideas here",
-                          hintStyle: TextStyle(color: Colors.white),
-                          border: InputBorder.none)))),
-          Divider(),
-          ListTile(
-              leading:
-                  Icon(Icons.person_pin_circle, color: Colors.white, size: 36),
-              title: Container(
-                  width: 250.0,
-                  child: TextField(
-                      style: TextStyle(color: Colors.white),
-                      controller: locationTextEditingController,
-                      decoration: InputDecoration(
-                          hintText: "share your location here",
-                          hintStyle: TextStyle(color: Colors.white),
-                          border: InputBorder.none)))),
-          Container(
-            alignment: Alignment.center,
-            height: 110,
-            width: 220,
-            child: RaisedButton.icon(
-              color: Colors.green,
-              onPressed: getUserCurrentLocation,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(35.0)),
-              icon: Icon(
-                Icons.location_on,
-                color: Colors.white,
-              ),
-              label: Text(
-                "Set my current location",
-                style: TextStyle(color: Colors.white),
-              ),
+                    ),
+                  ),
+                )
+              ],
             ),
-          )
-        ],
-      ),
-    );
+          );
+        });
   }
 
   @override
   Widget build(BuildContext context) {
-    return _image == null ? displayScreen() : displayUploadFormScreen();
+    final user = Provider.of<User1>(context);
+    return _image == null ? displayScreen(user) : displayUploadFormScreen(user);
   }
 }

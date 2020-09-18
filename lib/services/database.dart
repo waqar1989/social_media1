@@ -1,3 +1,4 @@
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:social_media1/models/user.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:social_media1/models/brew.dart';
@@ -10,6 +11,13 @@ class DatabaseService {
       // ignore: deprecated_member_use
       Firestore.instance.collection('profilesData');
 
+  final CollectionReference postCollection =
+      // ignore: deprecated_member_use
+      Firestore.instance.collection('postsData');
+
+  final StorageReference storageReference =
+      FirebaseStorage.instance.ref().child("Posts Pictures");
+
   Future updatedUserData(
       String name, String gender, String education, String location) async {
     return await profileCollection.doc(uid).set({
@@ -17,6 +25,16 @@ class DatabaseService {
       'gender': gender,
       'education': education,
       'location': location
+    });
+  }
+
+  Future updatePostData(String userId, String postUrl, String postDescription,
+      String postLocation) async {
+    return await postCollection.doc(uid).set({
+      'userId': userId,
+      'postUrl': postUrl,
+      'postDescription': postDescription,
+      'postLocation': postLocation,
     });
   }
 
@@ -41,6 +59,14 @@ class DatabaseService {
         location: snapshot.data()['location']);
   }
 
+  PostData _postDataFromSnapshot(DocumentSnapshot snapshot) {
+    return PostData(
+        uid: uid,
+        postUrl: snapshot.data()['postUrl'],
+        postDescription: snapshot.data()['postDescription'],
+        postLocation: snapshot.data()['postLocation']);
+  }
+
   //get brew stream
 
   Stream<List<ProfileData>> get profiles {
@@ -49,5 +75,9 @@ class DatabaseService {
 
   Stream<UserData> get userData {
     return profileCollection.doc(uid).snapshots().map(_userDataFromSnapshot);
+  }
+
+  Stream<PostData> get postData {
+    return postCollection.doc(uid).snapshots().map(_postDataFromSnapshot);
   }
 }

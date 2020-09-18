@@ -13,3 +13,12 @@ class UserData {
 
   UserData({this.uid, this.name, this.gender, this.education, this.location});
 }
+
+class PostData {
+  final String uid;
+  final String postUrl;
+  final String postDescription;
+  final String postLocation;
+
+  PostData({this.uid, this.postUrl, this.postDescription, this.postLocation});
+}
