@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:social_media1/pages/notificationPage.dart';
@@ -14,6 +16,11 @@ import 'package:social_media1/models/user.dart';
 
 final _auth = FirebaseAuth.instance;
 
+// ignore: deprecated_member_use
+final postsReference = Firestore.instance.collection("posts");
+final StorageReference storageReference =
+    FirebaseStorage.instance.ref().child('Post Pictures');
+
 class HomePage extends StatefulWidget {
   final String userProfileId;
   HomePage({this.userProfileId});
@@ -26,7 +33,6 @@ class _HomePageState extends State<HomePage> {
   bool isSignedIn = true;
   PageController pageController;
   int getPageIndex = 0;
-
 
   void initState() {
     super.initState();
@@ -54,8 +60,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   StreamProvider buildHomeScreen(user) {
-    return StreamProvider<List<ProfileData>>.value(
-        value: DatabaseService().profiles,
+    return StreamProvider<UserData>.value(
+        value: DatabaseService().userData,
         builder: (context, snapshot) {
           return Scaffold(
             // backgroundColor: Colors.black,
@@ -71,7 +77,9 @@ class _HomePageState extends State<HomePage> {
                 //     )),
                 TimeLinePage(),
                 SearchPage(),
-                UploadPage(),
+                UploadPage(
+                  user: user,
+                ),
                 NotificationPage(),
                 ProfilePage(),
               ],
@@ -116,5 +124,3 @@ class _HomePageState extends State<HomePage> {
     }
   }
 }
-
-

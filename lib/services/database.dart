@@ -7,9 +7,9 @@ class DatabaseService {
   final String uid;
   DatabaseService({this.uid});
 
-  final CollectionReference profileCollection =
+  final CollectionReference userDataCollection =
       // ignore: deprecated_member_use
-      Firestore.instance.collection('profilesData');
+      Firestore.instance.collection('userData');
 
   final CollectionReference postCollection =
       // ignore: deprecated_member_use
@@ -18,9 +18,10 @@ class DatabaseService {
   final StorageReference storageReference =
       FirebaseStorage.instance.ref().child("Posts Pictures");
 
-  Future updatedUserData(
-      String name, String gender, String education, String location) async {
-    return await profileCollection.doc(uid).set({
+  Future updatedUserData(String downloadUrl, String name, String gender,
+      String education, String location) async {
+    return await userDataCollection.doc(uid).set({
+      'downloadUrl': downloadUrl,
       'name': name,
       'gender': gender,
       'education': education,
@@ -70,11 +71,11 @@ class DatabaseService {
   //get brew stream
 
   Stream<List<ProfileData>> get profiles {
-    return profileCollection.snapshots().map(_brewListFromSnapshot);
+    return userDataCollection.snapshots().map(_brewListFromSnapshot);
   }
 
   Stream<UserData> get userData {
-    return profileCollection.doc(uid).snapshots().map(_userDataFromSnapshot);
+    return userDataCollection.doc(uid).snapshots().map(_userDataFromSnapshot);
   }
 
   Stream<PostData> get postData {

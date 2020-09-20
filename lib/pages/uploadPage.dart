@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,11 +8,17 @@ import 'package:image/image.dart' as ImD;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:social_media1/Widgets/progressWidget.dart';
+import 'package:social_media1/screens/home/Homepage.dart';
 import 'package:social_media1/services/database.dart';
 import 'package:provider/provider.dart';
 import 'package:social_media1/models/user.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class UploadPage extends StatefulWidget {
+  final User1 user;
+  UploadPage({this.user});
+
   @override
   _UploadPageState createState() => _UploadPageState();
 }
@@ -19,13 +26,14 @@ class UploadPage extends StatefulWidget {
 class _UploadPageState extends State<UploadPage> {
   File _image;
   bool uploading = false;
+  String postId = User1().uid;
+
   String downloadUrl;
   final picker = ImagePicker();
 
   TextEditingController desciptionTextEditingController =
       TextEditingController();
   TextEditingController locationTextEditingController = TextEditingController();
-  final _firestore = FirebaseFirestore.instance;
 
   get _platform => null;
   Future addImageFromGallery() async {
@@ -111,6 +119,8 @@ class _UploadPageState extends State<UploadPage> {
   }
 
   removePage() {
+    locationTextEditingController.clear();
+    desciptionTextEditingController.clear();
     setState(() {
       _image = null;
     });
@@ -135,48 +145,62 @@ class _UploadPageState extends State<UploadPage> {
     });
   }
 
-  // savePostInfoToFireStore(String url, String location, String descripton) {
-  //   _firestore.collection("user posts").add({
-  //     "postId": {},
-  //     "ownerId": {},
-  //     "timestamp": {},
-  //     "Likes": {},
-  //     "username": {},
-  //     "desciption": descripton,
-  //     "location": location,
-  //     "url": url
-  //   }).then((value) => null);
-  // }
+  dynamic currentTime = DateTime.now();
+
+  savePostInfoToFireStore(String url, String location, String descripton) {
+    postsReference.doc(User1().uid).collection("usersPosts").doc(postId).set({
+      "postId": 'postId',
+      "ownerId": widget.user.uid,
+      "timestamp": currentTime,
+      "likes": {},
+      "username": {},
+      "desciption": descripton,
+      "location": location,
+      "url": url
+    });
+  }
 
   controlUploadAndSave(user) async {
-    uploading = true;
+    setState(() {
+      uploading = true;
+    });
 
-    await compressingPhoto();
+    // await compressingPhoto();
     String downloadUrl = await uploadPhoto(_image);
+    print(user.uid);
 
-    DatabaseService(uid: user.uid).updatePostData(
-      user.toString(),
-      desciptionTextEditingController.text,
-      downloadUrl,
-      locationTextEditingController.text,
-    );
+    savePostInfoToFireStore(downloadUrl, locationTextEditingController.text,
+        desciptionTextEditingController.text);
+
+    locationTextEditingController.clear();
+    desciptionTextEditingController.clear();
+
+    setState(() {
+      _image = null;
+      uploading = false;
+    });
   }
 
   Future<String> uploadPhoto(mImageFile) async {
-    try {
-      DatabaseService databaseService = DatabaseService();
-      StorageUploadTask mstorageUploadTask = databaseService.storageReference
-          .child("post_&postId.jpg")
-          .putFile(mImageFile);
-      StorageTaskSnapshot storageTaskSnapshot =
-          await mstorageUploadTask.onComplete;
-      String downloadUrl = await storageTaskSnapshot.ref.getDownloadURL();
-      return downloadUrl;
-    } catch (e) {
-      print(e.toString());
-      return null;
-    }
+    StorageUploadTask mstorageUploadTask =
+        storageReference.child("post_$postId.jpg").putFile(_image);
+    StorageTaskSnapshot storageTaskSnapshot =
+        await mstorageUploadTask.onComplete;
+    String downloadUrl = await storageTaskSnapshot.ref.getDownloadURL();
+    return downloadUrl;
   }
+
+  // Future upload(BuildContext context) async {
+  //   StorageReference firebaseStorageRef =
+  //       FirebaseStorage.instance.ref().child(_image.path);
+  //   StorageUploadTask uploadTask = firebaseStorageRef.putFile(_image);
+  //   StorageTaskSnapshot taskSnapshot = await uploadTask.onComplete;
+  //   String downloadUrl = await taskSnapshot.ref.getDownloadURL();
+  //   return downloadUrl;
+  //   setState(() {
+  //     print("Profile Picture Uploaded");
+  //   });
+  // }
 
   getUserCurrentLocation() async {
     Position position =
@@ -191,10 +215,10 @@ class _UploadPageState extends State<UploadPage> {
   }
 
   displayUploadFormScreen(user) {
-    return StreamBuilder<PostData>(
-        stream: DatabaseService(uid: user.uid).postData,
+    return StreamBuilder<UserData>(
+        stream: DatabaseService(uid: user.uid).userData,
         builder: (context, snapshot) {
-          PostData postData = snapshot.data;
+          UserData userData = snapshot.data;
           return Scaffold(
             backgroundColor: Colors.black,
             appBar: AppBar(
@@ -226,6 +250,7 @@ class _UploadPageState extends State<UploadPage> {
             ),
             body: ListView(
               children: [
+                uploading ? linearProgress() : Text(""),
                 Container(
                   height: 230.0,
                   width: 230.0,
@@ -246,8 +271,8 @@ class _UploadPageState extends State<UploadPage> {
                 ListTile(
                     leading: CircleAvatar(
                       radius: 25,
-                      // backgroundImage:
-                      //     AssetImage('assets/images/background.jpg'),
+                      backgroundImage:
+                          CachedNetworkImageProvider("userData.downloadUrl"),
                     ),
                     title: Container(
                         width: 250.0,

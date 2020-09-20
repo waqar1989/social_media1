@@ -5,13 +5,20 @@ class User1 {
 }
 
 class UserData {
+  final String downloadUrl;
   final String uid;
   final String name;
   final String gender;
   final String education;
   final String location;
 
-  UserData({this.uid, this.name, this.gender, this.education, this.location});
+  UserData(
+      {this.downloadUrl,
+      this.uid,
+      this.name,
+      this.gender,
+      this.education,
+      this.location});
 }
 
 class PostData {

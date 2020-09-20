@@ -48,8 +48,8 @@ class AuthService {
       UserCredential result = await _auth.createUserWithEmailAndPassword(
           email: email, password: password);
       User user = result.user;
-      await DatabaseService(uid: user.uid)
-          .updatedUserData('new member', 'gender', 'education', 'location');
+      await DatabaseService(uid: user.uid).updatedUserData(
+          'uid', 'new member', 'gender', 'education', 'location');
       return _userFormFireBaseUser(user);
     } catch (e) {
       print(e.toString());

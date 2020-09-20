@@ -56,22 +56,24 @@ class _EditProfilePageState extends State<EditProfilePage> {
       });
     }
 
-    // Future upload(BuildContext context) async {
-    //   String fileName = basename(_image.path);
-    //   StorageReference firebaseStorageRef =
-    //       FirebaseStorage.instance.ref().child(fileName);
-    //   StorageUploadTask uploadTask = firebaseStorageRef.putFile(_image);
-    //   StorageTaskSnapshot taskSnapshot = await uploadTask.onComplete;
-    //   setState(() {
-    //     print("Profile Picture Uploaded");
-    //   });
-    // }
+    Future<String> upload(BuildContext context) async {
+      String fileName = basename(_image.path);
+      StorageReference firebaseStorageRef =
+          FirebaseStorage.instance.ref().child(fileName);
+      StorageUploadTask uploadTask = firebaseStorageRef.putFile(_image);
+      StorageTaskSnapshot taskSnapshot = await uploadTask.onComplete;
+      String downloadUrl = await taskSnapshot.ref.getDownloadURL();
+      return downloadUrl;
+      print(downloadUrl);
+    }
 
     final user = Provider.of<User1>(context);
     return StreamBuilder<UserData>(
         stream: DatabaseService(uid: user.uid).userData,
         builder: (context, snapshot) {
-          if (snapshot.hasData) {
+          if (!snapshot.hasData) {
+            circularProgress();
+          } else {
             UserData userData = snapshot.data;
             return Scaffold(
                 key: _scaffoldGlobalKey,
@@ -108,8 +110,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 child: ClipOval(
                                     child: (_image != null)
                                         ? Image.file(_image, fit: BoxFit.fill)
-                                        : Image.network(
-                                            "https://i.pinimg.com/originals/2e/2f/ac/2e2fac9d4a392456e511345021592dd2.jpg")),
+                                        : Image.network(userData.downloadUrl)),
                               ),
                             ),
                           ),
@@ -130,21 +131,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             child: RaisedButton(
                               color: Colors.grey[300],
                               onPressed: () {
-                                // String fileName = basename(_image.path);
-                                // StorageReference firebaseStorageRef =
-                                //     FirebaseStorage.instance
-                                //         .ref()
-                                //         .child(fileName);
-                                // StorageUploadTask uploadTask =
-                                //     firebaseStorageRef.putFile(_image);
-                                // StorageTaskSnapshot taskSnapshot =
-                                //     await uploadTask.onComplete;
-                                // setState(() {
-                                //   print("Profile Picture Uploaded");
-                                // });
                                 setState(() async {
+                                  String downloadUrl = await upload(context);
+                                  print(downloadUrl);
                                   await DatabaseService(uid: user.uid)
                                       .updatedUserData(
+                                          downloadUrl ?? "",
                                           _currentName ?? userData.name,
                                           _currentGender ?? userData.gender,
                                           _currentEducation ??
@@ -176,8 +168,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           )
                         ],
                       ));
-          } else {
-            Loading();
           }
         });
   }
