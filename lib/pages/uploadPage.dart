@@ -148,7 +148,11 @@ class _UploadPageState extends State<UploadPage> {
   dynamic currentTime = DateTime.now();
 
   savePostInfoToFireStore(String url, String location, String descripton) {
-    postsReference.doc(User1().uid).collection("usersPosts").doc(postId).set({
+    postsReference
+        .doc(widget.user.uid)
+        .collection("usersPosts")
+        .doc(postId)
+        .set({
       "postId": 'postId',
       "ownerId": widget.user.uid,
       "timestamp": currentTime,
@@ -271,8 +275,7 @@ class _UploadPageState extends State<UploadPage> {
                 ListTile(
                     leading: CircleAvatar(
                       radius: 25,
-                      backgroundImage:
-                          CachedNetworkImageProvider("userData.downloadUrl"),
+                      backgroundImage: NetworkImage(userData.downloadUrl),
                     ),
                     title: Container(
                         width: 250.0,

@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +7,7 @@ import 'package:social_media1/services/database.dart';
 import 'package:provider/provider.dart';
 
 class Post extends StatefulWidget {
+  final User1 user;
   final String postId;
   final String ownerId;
   // final String timestamp;
@@ -18,7 +18,8 @@ class Post extends StatefulWidget {
   final String url;
 
   Post(
-      {this.postId,
+      {this.user,
+      this.postId,
       this.ownerId,
       // this.timestamp,
       this.likes,
@@ -105,18 +106,18 @@ class _PostState extends State<Post> {
   }
 
   createPostHead(user) {
-    return StreamBuilder<PostData>(
-        stream: DatabaseService(uid: user.uid).postData,
+    return StreamBuilder<UserData>(
+        stream: DatabaseService(uid: widget.user.uid).userData,
         builder: (context, snapshot) {
+          UserData userData = snapshot.data;
           if (!snapshot.hasData) {
             return circularProgress();
           }
-          bool isPostOwner = User1().uid == ownerId;
+          bool isPostOwner = widget.user.uid == ownerId;
 
           return ListTile(
             leading: CircleAvatar(
-                backgroundImage: NetworkImage(
-                    'https://i.pinimg.com/originals/2e/2f/ac/2e2fac9d4a392456e511345021592dd2.jpg')),
+                backgroundImage: NetworkImage(userData.downloadUrl)),
             title: GestureDetector(
               onTap: () => print("Show Profile"),
               child: Text(

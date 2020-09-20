@@ -12,6 +12,10 @@ import 'package:path/path.dart';
 import 'package:image_picker/image_picker.dart';
 
 class EditProfilePage extends StatefulWidget {
+  
+  final User1 user;
+  EditProfilePage({this.user});
+
   @override
   _EditProfilePageState createState() => _EditProfilePageState();
 }
@@ -71,9 +75,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return StreamBuilder<UserData>(
         stream: DatabaseService(uid: user.uid).userData,
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            circularProgress();
-          } else {
+          if (snapshot.hasData) {
             UserData userData = snapshot.data;
             return Scaffold(
                 key: _scaffoldGlobalKey,
@@ -168,6 +170,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           )
                         ],
                       ));
+          } else {
+            circularProgress();
           }
         });
   }

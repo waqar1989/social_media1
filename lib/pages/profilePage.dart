@@ -9,9 +9,11 @@ import 'package:social_media1/models/user.dart';
 import 'package:social_media1/pages/editProfilePage.dart';
 import 'package:social_media1/screens/home/Homepage.dart';
 import 'package:social_media1/services/database.dart';
-import 'package:social_media1/shared/loading.dart';
 
 class ProfilePage extends StatefulWidget {
+  final User1 user;
+  ProfilePage({this.user});
+
   @override
   _ProfilePageState createState() => _ProfilePageState();
 }
@@ -24,6 +26,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String postOrientation = "grid";
 
   void iniState() {
+    super.initState();
     getAllProfilePosts();
   }
 
@@ -35,9 +38,9 @@ class _ProfilePageState extends State<ProfilePage> {
           Row(
             children: [
               CircleAvatar(
-                  radius: 45.0,
-                  backgroundImage: NetworkImage(
-                      'https://i.pinimg.com/originals/2e/2f/ac/2e2fac9d4a392456e511345021592dd2.jpg')),
+                radius: 45.0,
+                backgroundImage: NetworkImage(userData.downloadUrl),
+              ),
               Expanded(
                 flex: 1,
                 child: Column(
@@ -167,15 +170,12 @@ class _ProfilePageState extends State<ProfilePage> {
     return StreamBuilder<UserData>(
         stream: DatabaseService(uid: user.uid).userData,
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            circularProgress();
-          } else {
+          if (snapshot.hasData) {
             UserData userData = snapshot.data;
             return Scaffold(
               backgroundColor: Colors.black,
               appBar: header(context,
-                  strTitle: userData.downloadUrl.toString(),
-                  disappearBackButton: false),
+                  strTitle: "Profile", disappearBackButton: false),
               body: ListView(
                 children: [
                   createProfileView(userData),
@@ -186,6 +186,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 ],
               ),
             );
+          } else {
+            circularProgress();
           }
         });
   }
@@ -240,7 +242,7 @@ class _ProfilePageState extends State<ProfilePage> {
       loading = true;
     });
     QuerySnapshot querySnapshot = await postsReference
-        .doc(User1().uid)
+        .doc(widget.user.uid)
         .collection("usersPosts")
         .orderBy("timestamp", descending: true)
         .get();

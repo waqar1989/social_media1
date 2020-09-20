@@ -81,7 +81,9 @@ class _HomePageState extends State<HomePage> {
                   user: user,
                 ),
                 NotificationPage(),
-                ProfilePage(),
+                ProfilePage(
+                  user: user,
+                ),
               ],
               controller: pageController,
               onPageChanged: whenPageChanges,
