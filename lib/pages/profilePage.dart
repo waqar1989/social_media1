@@ -24,6 +24,7 @@ class _ProfilePageState extends State<ProfilePage> {
   int countPost = 0;
   List<Post> postsList = [];
   String postOrientation = "grid";
+  int x = 5;
 
   void iniState() {
     super.initState();
@@ -187,7 +188,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             );
           } else {
-            circularProgress();
+            return circularProgress();
           }
         });
   }
@@ -195,7 +196,9 @@ class _ProfilePageState extends State<ProfilePage> {
   displayProfilePost() {
     if (loading) {
       return circularProgress();
-    } else if (postsList.isEmpty) {
+    } 
+    else if (postsList.isEmpty)
+     {
       return Container(
           child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
